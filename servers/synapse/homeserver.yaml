@@ -1,0 +1,78 @@
+server_name: "benchmark.local"
+pid_file: /data/homeserver.pid
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: false
+    bind_addresses: ["0.0.0.0"]
+    resources:
+      - names: [client]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: synapse
+    database: synapse
+    host: db
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+log_config: "/data/benchmark.local.log.config"
+media_store_path: /data/media_store
+signing_key_path: "/data/benchmark.local.signing.key"
+
+trusted_key_servers: []
+
+enable_registration: true
+enable_registration_without_verification: true
+registration_shared_secret: "benchmarksecret"
+
+suppress_key_server_warning: true
+report_stats: false
+
+rc_message:
+  per_second: 10000
+  burst_count: 10000
+rc_registration:
+  per_second: 10000
+  burst_count: 10000
+rc_login:
+  address:
+    per_second: 10000
+    burst_count: 10000
+  account:
+    per_second: 10000
+    burst_count: 10000
+  failed_attempts:
+    per_second: 10000
+    burst_count: 10000
+rc_admin_redaction:
+  per_second: 10000
+  burst_count: 10000
+rc_joins:
+  local:
+    per_second: 10000
+    burst_count: 10000
+  remote:
+    per_second: 10000
+    burst_count: 10000
+rc_joins_per_room:
+  per_second: 10000
+  burst_count: 10000
+rc_3pid_validation:
+  per_second: 10000
+  burst_count: 10000
+rc_invites:
+  per_room:
+    per_second: 10000
+    burst_count: 10000
+  per_user:
+    per_second: 10000
+    burst_count: 10000
+
+federation_domain_whitelist: []

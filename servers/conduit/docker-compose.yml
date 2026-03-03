@@ -1,0 +1,18 @@
+services:
+  homeserver:
+    image: docker.io/matrixconduit/matrix-conduit:latest
+    ports:
+      - "8008:6167"
+    volumes:
+      - ./conduit.toml:/etc/conduit.toml:ro
+      - conduit_data:/var/lib/matrix-conduit/
+    environment:
+      CONDUIT_CONFIG: /etc/conduit.toml
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+volumes:
+  conduit_data:

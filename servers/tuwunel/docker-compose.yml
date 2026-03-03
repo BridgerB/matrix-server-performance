@@ -1,0 +1,18 @@
+services:
+  homeserver:
+    image: docker.io/jevolk/tuwunel:latest
+    ports:
+      - "8008:6167"
+    volumes:
+      - tuwunel_data:/var/lib/tuwunel
+      - ./tuwunel.toml:/etc/tuwunel.toml:ro
+    environment:
+      TUWUNEL_CONFIG: /etc/tuwunel.toml
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+volumes:
+  tuwunel_data:

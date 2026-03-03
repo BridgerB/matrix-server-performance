@@ -1,0 +1,44 @@
+services:
+  monolith:
+    image: ghcr.io/element-hq/dendrite-monolith:latest
+    command: ["-really-enable-open-registration"]
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./config:/etc/dendrite
+      - dendrite_media:/var/dendrite/media
+      - dendrite_jetstream:/var/dendrite/jetstream
+      - dendrite_searchindex:/var/dendrite/searchindex
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+  postgres:
+    image: docker.io/postgres:15-alpine
+    environment:
+      POSTGRES_USER: dendrite
+      POSTGRES_PASSWORD: dendrite
+      POSTGRES_DB: dendrite
+    volumes:
+      - dendrite_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dendrite"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+
+volumes:
+  dendrite_pgdata:
+  dendrite_media:
+  dendrite_jetstream:
+  dendrite_searchindex:

@@ -1,0 +1,18 @@
+services:
+  homeserver:
+    image: forgejo.ellis.link/continuwuation/continuwuity:latest
+    ports:
+      - "8008:6167"
+    volumes:
+      - continuwuity_data:/var/lib/continuwuity
+      - ./continuwuity.toml:/etc/continuwuity.toml:ro
+    environment:
+      CONTINUWUITY_CONFIG: /etc/continuwuity.toml
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+volumes:
+  continuwuity_data:

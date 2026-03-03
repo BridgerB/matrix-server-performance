@@ -1,0 +1,12 @@
+[global]
+server_name = "benchmark.local"
+database_backend = "rocksdb"
+database_path = "/var/lib/matrix-conduit/"
+port = 6167
+max_request_size = 20000000
+allow_registration = true
+allow_federation = false
+allow_check_for_updates = false
+trusted_servers = ["matrix.org"]
+address = "0.0.0.0"
+log = "warn,_=off,sled=off"

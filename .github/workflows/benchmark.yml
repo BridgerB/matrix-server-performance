@@ -1,0 +1,42 @@
+name: Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      servers:
+        description: "Servers to benchmark (space-separated, or 'all' for conduit tuwunel continuwuity dendrite synapse)"
+        default: "conduit tuwunel continuwuity dendrite synapse"
+      num_messages:
+        description: "Number of messages per test"
+        default: "500"
+      concurrency:
+        description: "Number of concurrent workers"
+        default: "10"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Run benchmark
+        run: |
+          SERVERS="${{ inputs.servers }}"
+          if [ "$SERVERS" = "all" ]; then
+            SERVERS="conduit tuwunel continuwuity dendrite synapse"
+          fi
+          npx tsx main.ts --num-messages ${{ inputs.num_messages }} --concurrency ${{ inputs.concurrency }} $SERVERS
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: results/*.json

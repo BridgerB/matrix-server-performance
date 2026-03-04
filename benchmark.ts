@@ -49,10 +49,10 @@ export async function register(
 	const body: Record<string, unknown> = {
 		username,
 		password,
-		auth: { type: "m.login.dummy" },
 		inhibit_login: false,
 	};
 
+	// Step 1: request without auth to get session and flows
 	let resp = await fetch(url, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -65,6 +65,7 @@ export async function register(
 		const flows = data.flows ?? [];
 		const stages: string[] = flows[0]?.stages ?? [];
 
+		// Step 2: complete each required stage
 		for (const stage of stages) {
 			if (stage === "m.login.registration_token") {
 				body.auth = {
@@ -84,6 +85,7 @@ export async function register(
 			if (resp.status !== 401) break;
 		}
 
+		// Fallback: try dummy auth if stages didn't complete
 		if (!resp.ok && resp.status === 401) {
 			body.auth = { type: "m.login.dummy", session };
 			resp = await fetch(url, {

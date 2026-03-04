@@ -9,39 +9,68 @@ const SERVERS_DIR = path.join(ROOT, "servers");
 
 interface ServerConfig {
 	name: string;
-	composeFile: string;
 	registrationToken?: string;
-	preStart?: () => void;
+	start: () => void;
+	stop: () => void;
 	postStart?: () => string | undefined;
 }
 
+function dockerServer(
+	name: string,
+	opts?: {
+		preStart?: () => void;
+		postStart?: () => string | undefined;
+		registrationToken?: string;
+	},
+): ServerConfig {
+	const composeFile = path.join(SERVERS_DIR, name, "docker-compose.yml");
+	return {
+		name,
+		registrationToken: opts?.registrationToken,
+		postStart: opts?.postStart,
+		start() {
+			if (opts?.preStart) opts.preStart();
+			console.log(`Starting ${name}...`);
+			exec(`docker compose -f ${composeFile} up -d --build`);
+		},
+		stop() {
+			exec(`docker compose -f ${composeFile} down -v --remove-orphans`, {
+				ignoreError: true,
+			});
+		},
+	};
+}
+
 const SERVERS: ServerConfig[] = [
-	{
-		name: "synapse",
-		composeFile: path.join(SERVERS_DIR, "synapse", "docker-compose.yml"),
+	dockerServer("synapse", {
 		preStart() {
+			const composeFile = path.join(
+				SERVERS_DIR,
+				"synapse",
+				"docker-compose.yml",
+			);
 			console.log("Generating Synapse signing key...");
 			exec(
-				`docker compose -f ${this.composeFile} run --rm ` +
+				`docker compose -f ${composeFile} run --rm ` +
 					`-e SYNAPSE_SERVER_NAME=benchmark.local ` +
 					`-e SYNAPSE_REPORT_STATS=no ` +
 					`--no-deps synapse generate`,
 				{ ignoreError: true },
 			);
 		},
-	},
-	{
-		name: "conduit",
-		composeFile: path.join(SERVERS_DIR, "conduit", "docker-compose.yml"),
-	},
-	{
-		name: "continuwuity",
-		composeFile: path.join(SERVERS_DIR, "continuwuity", "docker-compose.yml"),
+	}),
+	dockerServer("conduit"),
+	dockerServer("continuwuity", {
 		postStart() {
+			const composeFile = path.join(
+				SERVERS_DIR,
+				"continuwuity",
+				"docker-compose.yml",
+			);
 			console.log("Extracting registration token from logs...");
 			for (let i = 0; i < 30; i++) {
 				const logs = execCapture(
-					`docker compose -f ${this.composeFile} logs homeserver 2>&1`,
+					`docker compose -f ${composeFile} logs homeserver 2>&1`,
 				);
 				const match = logs.match(
 					/using the registration token\s+(?:\x1b\[[^m]*m)*(\w+)/,
@@ -52,16 +81,13 @@ const SERVERS: ServerConfig[] = [
 				}
 				execSync("sleep 1");
 			}
-			throw new Error("Could not find registration token in continuwuity logs");
+			throw new Error(
+				"Could not find registration token in continuwuity logs",
+			);
 		},
-	},
-	{
-		name: "tuwunel",
-		composeFile: path.join(SERVERS_DIR, "tuwunel", "docker-compose.yml"),
-	},
-	{
-		name: "dendrite",
-		composeFile: path.join(SERVERS_DIR, "dendrite", "docker-compose.yml"),
+	}),
+	dockerServer("tuwunel"),
+	dockerServer("dendrite", {
 		preStart() {
 			const configDir = path.join(SERVERS_DIR, "dendrite", "config");
 			const keyFile = path.join(configDir, "matrix_key.pem");
@@ -75,7 +101,7 @@ const SERVERS: ServerConfig[] = [
 				);
 			}
 		},
-	},
+	}),
 ];
 
 function exec(cmd: string, opts?: { ignoreError?: boolean }) {
@@ -89,12 +115,6 @@ function exec(cmd: string, opts?: { ignoreError?: boolean }) {
 
 function execCapture(cmd: string): string {
 	return execSync(cmd, { timeout: 30_000 }).toString();
-}
-
-function cleanup(composeFile: string) {
-	exec(`docker compose -f ${composeFile} down -v --remove-orphans`, {
-		ignoreError: true,
-	});
 }
 
 function parseArgs() {
@@ -146,14 +166,8 @@ async function main() {
 		console.log(` Benchmarking: ${server.name}`);
 		console.log("=".repeat(60));
 
-		cleanup(server.composeFile);
-
-		if (server.preStart) {
-			server.preStart();
-		}
-
-		console.log(`Starting ${server.name}...`);
-		exec(`docker compose -f ${server.composeFile} up -d`);
+		server.stop();
+		server.start();
 
 		let registrationToken = server.registrationToken;
 		if (server.postStart) {
@@ -179,7 +193,7 @@ async function main() {
 		} catch (e) {
 			console.error(`Benchmark failed for ${server.name}:`, e);
 		} finally {
-			cleanup(server.composeFile);
+			server.stop();
 		}
 
 		console.log();

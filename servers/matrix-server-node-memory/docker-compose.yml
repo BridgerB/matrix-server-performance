@@ -1,0 +1,14 @@
+services:
+  homeserver:
+    build:
+      context: ../../upstream/matrix-server-node
+    ports:
+      - "8008:8008"
+    environment:
+      SERVER_NAME: benchmark.local
+      STORAGE: memory
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G

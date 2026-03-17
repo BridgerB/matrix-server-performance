@@ -1,0 +1,38 @@
+services:
+  mariadb:
+    image: mariadb:11-noble
+    environment:
+      MARIADB_USER: matrix
+      MARIADB_PASSWORD: matrix
+      MARIADB_DATABASE: matrix
+      MARIADB_ROOT_PASSWORD: matrix
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "matrix", "-pmatrix"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+  homeserver:
+    build:
+      context: ../../upstream/matrix-server-node
+    ports:
+      - "8008:8008"
+    environment:
+      SERVER_NAME: benchmark.local
+      STORAGE: mysql
+      DATABASE_URL: mysql://matrix:matrix@mariadb/matrix
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G

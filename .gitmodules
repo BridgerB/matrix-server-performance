@@ -16,3 +16,6 @@
 [submodule "upstream/synapse"]
 	path = upstream/synapse
 	url = https://github.com/element-hq/synapse.git
+[submodule "upstream/matrix-server-node"]
+	path = upstream/matrix-server-node
+	url = https://github.com/BridgerB/matrix-server-node.git
